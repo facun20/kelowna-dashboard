@@ -59,10 +59,20 @@ export function WeatherWidget() {
   const [data, setData] = useState<WeatherData | null>(null);
 
   useEffect(() => {
-    fetch("/api/data/weather")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null));
+    let cancelled = false;
+    async function load() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const r = await fetch("/api/data/weather");
+          const json = await r.json();
+          if (!cancelled && json.available) { setData(json); return; }
+        } catch { /* retry */ }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (!cancelled) setData(null);
+    }
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   if (!data?.available) {

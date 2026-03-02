@@ -23,11 +23,11 @@ scheduleJob("0 6 * * *", () => hit("/api/etl/business-licences"));
 // Building permits — daily at 6 AM UTC
 scheduleJob("5 6 * * *", () => hit("/api/etl/building-permits"));
 
-// News — every 6 hours
-scheduleJob("0 */6 * * *", () => hit("/api/etl/news"));
+// News — every hour
+scheduleJob("0 * * * *", () => hit("/api/etl/news"));
 
-// Reddit — every 6 hours (offset by 10 min)
-scheduleJob("10 */6 * * *", () => hit("/api/etl/reddit"));
+// Reddit — every hour (offset by 5 min)
+scheduleJob("5 * * * *", () => hit("/api/etl/reddit"));
 
 // Council meetings — Tuesdays at 8 AM UTC
 scheduleJob("0 8 * * 2", () => hit("/api/etl/council"));

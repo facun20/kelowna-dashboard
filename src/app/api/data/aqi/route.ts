@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const res = await fetch(
       "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=49.8880&longitude=-119.4960&current=pm2_5,pm10,us_aqi&timezone=America/Vancouver",
-      { next: { revalidate: 1800 } } // 30 min cache
+      { cache: "no-store" }
     );
 
     if (!res.ok) {

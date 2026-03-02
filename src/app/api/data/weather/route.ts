@@ -28,7 +28,7 @@ export async function GET() {
   try {
     const res = await fetch("https://wttr.in/Kelowna?format=j1", {
       headers: { "User-Agent": "KelownaCivicDashboard/1.0" },
-      next: { revalidate: 1800 }, // 30 min cache
+      cache: "no-store",
     });
 
     if (!res.ok) {
