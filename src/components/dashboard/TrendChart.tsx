@@ -79,7 +79,7 @@ export function TrendChart({
               color: tooltipText,
               fontSize: "13px",
             }}
-            formatter={(value: number | undefined) => [fmt(value ?? 0), title]}
+            formatter={(value: unknown) => [fmt(typeof value === "number" ? value : 0), title]}
           />
           <Area
             type="monotone"

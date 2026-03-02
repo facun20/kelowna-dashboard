@@ -3,7 +3,7 @@ import Database from "better-sqlite3";
 import * as schema from "./schema";
 import path from "path";
 
-const dbPath = path.join(process.cwd(), "kelowna.db");
+const dbPath = process.env.DB_PATH || path.join(process.cwd(), "kelowna.db");
 const sqlite = new Database(dbPath);
 
 // Enable WAL mode for better concurrent read performance

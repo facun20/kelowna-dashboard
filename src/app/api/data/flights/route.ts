@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
  * Free tier: HTTP only, 100 requests/month.
  * We make 2 calls per request (departures + arrivals) — cached 15 min.
  */
-const AVIATIONSTACK_KEY = "08df8f152ebb7f6f1e47c88d39af80eb";
+const AVIATIONSTACK_KEY = process.env.AVIATIONSTACK_KEY || "08df8f152ebb7f6f1e47c88d39af80eb";
 const API_URL = `http://api.aviationstack.com/v1/flights`;
 
 interface FlightRaw {
