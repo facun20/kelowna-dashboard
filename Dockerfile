@@ -15,6 +15,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Ensure public dir exists (may be empty)
+RUN mkdir -p public
+
 RUN npm run build
 
 # ── Stage 3: Production runner ───────────────────────────
@@ -32,7 +35,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/public ./public 2>/dev/null || true
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/src ./src
