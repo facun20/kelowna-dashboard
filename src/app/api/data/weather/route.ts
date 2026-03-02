@@ -26,10 +26,14 @@ interface WttrResponse {
 
 export async function GET() {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch("https://wttr.in/Kelowna?format=j1", {
       headers: { "User-Agent": "KelownaCivicDashboard/1.0" },
       cache: "no-store",
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!res.ok) {
       return NextResponse.json(
