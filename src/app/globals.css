@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* ── Light mode (default) ────────────────────────── */
+:root {
+  --background: #faf8f5;
+  --card: #ffffff;
+  --card-border: #e5e0d9;
+  --card-hover: #f5f3f0;
+  --surface: #f0ede8;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --text-tertiary: #999999;
+  --nav-bg: rgba(250, 248, 245, 0.95);
+  --nav-active: #f0ede8;
+  --accent-positive: #16a34a;
+  --accent-negative: #dc2626;
+  --accent-blue: #2563eb;
+  --accent-purple: #7c3aed;
+  --chart-grid: #e5e0d9;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e5e0d9;
+  --chart-tooltip-text: #1a1a1a;
+  --tag-bg: #f0ede8;
+  --input-bg: #ffffff;
+  --input-border: #e5e0d9;
+  --skeleton: #f0ede8;
+}
+
+/* ── Dark mode ────────────────────────────────────── */
+.dark {
+  --background: #0a0a0a;
+  --card: #141414;
+  --card-border: #262626;
+  --card-hover: #1a1a1a;
+  --surface: #0a0a0a;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #666666;
+  --nav-bg: rgba(10, 10, 10, 0.95);
+  --nav-active: #1a1a2e;
+  --accent-positive: #22c55e;
+  --accent-negative: #ef4444;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --chart-grid: #262626;
+  --chart-tooltip-bg: #1a1a1a;
+  --chart-tooltip-border: #262626;
+  --chart-tooltip-text: #fafafa;
+  --tag-bg: #262626;
+  --input-bg: #141414;
+  --input-border: #262626;
+  --skeleton: #141414;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: "Inter", "Geist", system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

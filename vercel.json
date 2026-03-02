@@ -1,0 +1,11 @@
+{
+  "crons": [
+    { "path": "/api/etl/business-licences", "schedule": "0 6 * * *" },
+    { "path": "/api/etl/building-permits", "schedule": "0 6 * * *" },
+    { "path": "/api/etl/news", "schedule": "0 */6 * * *" },
+    { "path": "/api/etl/reddit", "schedule": "0 */6 * * *" },
+    { "path": "/api/etl/council", "schedule": "0 8 * * 2" },
+    { "path": "/api/etl/crime", "schedule": "0 0 1 8 *" },
+    { "path": "/api/etl/housing", "schedule": "0 0 15 * *" }
+  ]
+}
