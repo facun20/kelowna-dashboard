@@ -43,7 +43,7 @@ COPY --from=builder /app/cron.mjs ./cron.mjs
 
 # Entrypoint script: starts Next.js + cron in parallel
 COPY --from=builder /app/start.sh ./start.sh
-RUN chmod +x start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # SQLite data directory — mount a Railway volume at /data
 RUN mkdir -p /data && chown nextjs:nodejs /data
