@@ -12,6 +12,9 @@ import * as cheerio from "cheerio";
  * The page is server-rendered HTML with pagination via ?page=N (zero-indexed).
  * 50 results per page. Table columns:
  *   Permit | Address | Applicant | Contractor/Mailing | Sub Type | Value | Approval Date
+ *
+ * Note: kelowna.ca may block requests from datacenter IPs. If that happens,
+ * this ETL will log the error and return zero results.
  */
 
 const BASE_URL =
@@ -40,18 +43,12 @@ interface NormalizedPermit {
   rawData: string;
 }
 
-/**
- * Parse a dollar string like "$453,900" to a number.
- */
 function parseDollarValue(val: string): number | null {
   const cleaned = val.replace(/[$,\s]/g, "");
   const n = parseFloat(cleaned);
   return isNaN(n) ? null : n;
 }
 
-/**
- * Parse a date like "February 26, 2026" to "2026-02-26".
- */
 function parseApprovalDate(dateStr: string): string | null {
   try {
     const d = new Date(dateStr.trim());
@@ -62,9 +59,6 @@ function parseApprovalDate(dateStr: string): string | null {
   }
 }
 
-/**
- * Fetch and parse one page of approved building permits.
- */
 async function fetchPage(
   pageIndex: number,
   errors: string[]
@@ -82,14 +76,10 @@ async function fetchPage(
     const $ = cheerio.load(html);
     const permits: NormalizedPermit[] = [];
 
-    // Find the permits table
     const rows = $("table tbody tr");
     if (rows.length === 0) {
-      // Try alternative selectors — Drupal views sometimes use different markup
       const viewRows = $(".views-table tbody tr, .view-content table tbody tr");
-      if (viewRows.length === 0) {
-        return [];
-      }
+      if (viewRows.length === 0) return [];
     }
 
     const tableRows = $("table tbody tr").length > 0
@@ -98,25 +88,21 @@ async function fetchPage(
 
     tableRows.each((_i, row) => {
       const cells = $(row).find("td");
-      if (cells.length < 5) return; // skip malformed rows
+      if (cells.length < 5) return;
 
       const permitNumber = $(cells[0]).text().trim();
       const address = $(cells[1]).text().trim();
-      // cells[2] = Applicant, cells[3] = Contractor — skip
       const subType = $(cells[4]).text().trim();
       const valueStr = cells.length > 5 ? $(cells[5]).text().trim() : "";
       const approvalDateStr = cells.length > 6 ? $(cells[6]).text().trim() : "";
 
       if (!permitNumber) return;
 
-      const projectValue = valueStr ? parseDollarValue(valueStr) : null;
-      const issueDate = approvalDateStr ? parseApprovalDate(approvalDateStr) : null;
-
       permits.push({
         sourceId: `kelowna-permit-${permitNumber}`,
         permitType: subType || null,
-        projectValue,
-        issueDate,
+        projectValue: valueStr ? parseDollarValue(valueStr) : null,
+        issueDate: approvalDateStr ? parseApprovalDate(approvalDateStr) : null,
         address: address || null,
         description: `${subType} - ${address}`,
         status: "Approved",
@@ -124,11 +110,7 @@ async function fetchPage(
         lon: null,
         rawData: JSON.stringify({
           source: "kelowna.ca/approved-building-permits",
-          permitNumber,
-          address,
-          subType,
-          value: valueStr,
-          approvalDate: approvalDateStr,
+          permitNumber, address, subType, value: valueStr, approvalDate: approvalDateStr,
         }),
       });
     });
@@ -149,24 +131,21 @@ export async function fetchAndStore(): Promise<{
   let updated = 0;
   const errors: string[] = [];
 
-  // Fetch pages until we get an empty result (max 10 pages = 500 permits)
   const allPermits: NormalizedPermit[] = [];
   for (let page = 0; page < 10; page++) {
     const permits = await fetchPage(page, errors);
     if (permits.length === 0) break;
     allPermits.push(...permits);
-    // If we got fewer than 50, it was the last page
     if (permits.length < 50) break;
   }
 
   if (allPermits.length === 0) {
     errors.push(
-      "No permits scraped from kelowna.ca — site may be blocking requests (403)."
+      "No permits scraped from kelowna.ca — site may be blocking server requests."
     );
     return { inserted, updated, errors };
   }
 
-  // Upsert permits
   const now = new Date().toISOString();
 
   for (const permit of allPermits) {

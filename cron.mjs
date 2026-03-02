@@ -49,11 +49,25 @@ scheduleJob("0 1 2 * *", () => hit("/api/etl/business-yearly"));
 
 console.log(`[cron] Scheduler started. Base URL: ${BASE}`);
 
-// Run initial ETL on startup (wait 30s for Next.js to be ready)
+// Run ALL ETLs on startup (wait 30s for Next.js to be ready)
+// Seed data (instant, no external API): crime, housing, sales, business-yearly
+// External fetches: news, reddit, business-licences, council, permits, listings
 setTimeout(async () => {
-  console.log("[cron] Running initial ETL sweep...");
+  console.log("[cron] Running full startup ETL sweep...");
+
+  // Seed data first (fast, no network)
+  await hit("/api/etl/crime");
+  await hit("/api/etl/housing");
+  await hit("/api/etl/real-estate-sales");
+  await hit("/api/etl/business-yearly");
+
+  // External sources
   await hit("/api/etl/news");
   await hit("/api/etl/reddit");
   await hit("/api/etl/business-licences");
   await hit("/api/etl/council");
+  await hit("/api/etl/building-permits");
+  await hit("/api/etl/listings");
+
+  console.log("[cron] Startup sweep complete.");
 }, 30_000);
