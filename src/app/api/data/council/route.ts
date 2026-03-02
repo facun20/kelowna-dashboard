@@ -5,12 +5,12 @@ import { desc, eq, count } from "drizzle-orm";
 
 export async function GET() {
   try {
-    // Fetch recent council meetings ordered by date desc, limit 20
+    // Fetch all council meetings ordered by date desc
     const meetings = db
       .select()
       .from(councilMeetings)
       .orderBy(desc(councilMeetings.meetingDate))
-      .limit(20)
+      .limit(100)
       .all();
 
     // For each meeting, fetch its agenda items

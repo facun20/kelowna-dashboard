@@ -281,11 +281,13 @@ export default function CouncilPage() {
 
   const upcomingMeetings = filteredMeetings?.filter(
     (m) => m.meetingDate && m.meetingDate >= today
-  )?.sort((a, b) => (a.meetingDate ?? "").localeCompare(b.meetingDate ?? ""));
+  )?.sort((a, b) => (a.meetingDate ?? "").localeCompare(b.meetingDate ?? ""))
+    ?.slice(0, 12);
 
   const pastMeetings = filteredMeetings?.filter(
     (m) => !m.meetingDate || m.meetingDate < today
-  )?.sort((a, b) => (b.meetingDate ?? "").localeCompare(a.meetingDate ?? ""));
+  )?.sort((a, b) => (b.meetingDate ?? "").localeCompare(a.meetingDate ?? ""))
+    ?.slice(0, 12);
 
   return (
     <div className="space-y-8">
