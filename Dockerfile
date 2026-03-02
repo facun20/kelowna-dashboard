@@ -27,10 +27,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
 # Copy built app + cron scheduler
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
@@ -46,12 +42,10 @@ COPY --from=builder /app/start.sh ./start.sh
 RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # SQLite data directory — mount a Railway volume at /data
-RUN mkdir -p /data && chown nextjs:nodejs /data
+RUN mkdir -p /data
 ENV DB_PATH=/data/kelowna.db
 
 # The app runs on port 3000
 EXPOSE 3000
-
-USER nextjs
 
 CMD ["./start.sh"]
