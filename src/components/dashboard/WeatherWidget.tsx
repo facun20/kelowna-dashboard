@@ -31,17 +31,19 @@ interface WeatherData {
   }[];
 }
 
+/** Maps WMO weather interpretation codes to icons. */
 function getWeatherIcon(code: string, size = 24) {
   const c = parseInt(code, 10);
-  if (c === 113) return <Sun size={size} className="text-yellow-400" />;
-  if (c === 116 || c === 119) return <Cloud size={size} className="text-gray-400" />;
-  if (c === 122) return <Cloud size={size} className="text-gray-500" />;
-  if ([176, 263, 266, 293, 296].includes(c)) return <CloudDrizzle size={size} className="text-blue-300" />;
-  if ([299, 302, 305, 308, 356, 359].includes(c)) return <CloudRain size={size} className="text-blue-400" />;
-  if ([200, 386, 389, 392, 395].includes(c)) return <CloudLightning size={size} className="text-yellow-500" />;
-  if ([179, 182, 185, 227, 230, 311, 314, 317, 320, 323, 326, 329, 332, 335, 338, 350, 362, 365, 368, 371, 374, 377].includes(c))
-    return <CloudSnow size={size} className="text-sky-200" />;
-  if ([143, 248, 260].includes(c)) return <CloudFog size={size} className="text-gray-400" />;
+  if (c === 0) return <Sun size={size} className="text-yellow-400" />;
+  if (c <= 2) return <Cloud size={size} className="text-gray-400" />;
+  if (c === 3) return <Cloud size={size} className="text-gray-500" />;
+  if (c === 45 || c === 48) return <CloudFog size={size} className="text-gray-400" />;
+  if (c >= 51 && c <= 57) return <CloudDrizzle size={size} className="text-blue-300" />;
+  if (c >= 61 && c <= 67) return <CloudRain size={size} className="text-blue-400" />;
+  if (c >= 71 && c <= 77) return <CloudSnow size={size} className="text-sky-200" />;
+  if (c >= 80 && c <= 82) return <CloudRain size={size} className="text-blue-400" />;
+  if (c >= 85 && c <= 86) return <CloudSnow size={size} className="text-sky-200" />;
+  if (c >= 95) return <CloudLightning size={size} className="text-yellow-500" />;
   return <Cloud size={size} className="text-gray-400" />;
 }
 

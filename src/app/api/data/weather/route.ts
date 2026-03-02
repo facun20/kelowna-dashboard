@@ -1,76 +1,90 @@
 import { NextResponse } from "next/server";
 
-interface WttrCurrent {
-  temp_C: string;
-  FeelsLikeC: string;
-  humidity: string;
-  windspeedKmph: string;
-  weatherDesc: { value: string }[];
-  weatherCode: string;
-}
+/**
+ * Weather API — powered by Open-Meteo (free, no API key, highly reliable).
+ * Returns current conditions + 3-day forecast for Kelowna, BC.
+ * Uses WMO weather interpretation codes.
+ */
 
-interface WttrForecastDay {
-  date: string;
-  maxtempC: string;
-  mintempC: string;
-  hourly: {
-    weatherDesc: { value: string }[];
-    weatherCode: string;
-  }[];
-}
-
-interface WttrResponse {
-  current_condition: WttrCurrent[];
-  weather: WttrForecastDay[];
-}
+const WMO_DESCRIPTIONS: Record<number, string> = {
+  0: "Clear",
+  1: "Mostly Clear",
+  2: "Partly Cloudy",
+  3: "Overcast",
+  45: "Fog",
+  48: "Freezing Fog",
+  51: "Light Drizzle",
+  53: "Drizzle",
+  55: "Heavy Drizzle",
+  56: "Freezing Drizzle",
+  57: "Heavy Freezing Drizzle",
+  61: "Light Rain",
+  63: "Rain",
+  65: "Heavy Rain",
+  66: "Freezing Rain",
+  67: "Heavy Freezing Rain",
+  71: "Light Snow",
+  73: "Snow",
+  75: "Heavy Snow",
+  77: "Snow Grains",
+  80: "Light Showers",
+  81: "Showers",
+  82: "Heavy Showers",
+  85: "Light Snow Showers",
+  86: "Heavy Snow Showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm with Hail",
+  99: "Severe Thunderstorm",
+};
 
 export async function GET() {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch("https://wttr.in/Kelowna?format=j1", {
-      headers: { "User-Agent": "KelownaCivicDashboard/1.0" },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+    const res = await fetch(
+      "https://api.open-meteo.com/v1/forecast?" +
+        "latitude=49.888&longitude=-119.496" +
+        "&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m" +
+        "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+        "&timezone=America/Vancouver&forecast_days=3",
+      { cache: "no-store" }
+    );
 
     if (!res.ok) {
       return NextResponse.json(
-        { available: false, error: `wttr.in returned ${res.status}` },
+        { available: false, error: `Open-Meteo returned ${res.status}` },
         { status: 502 }
       );
     }
 
-    const json = (await res.json()) as WttrResponse;
-    const current = json.current_condition?.[0];
+    const json = await res.json();
+    const current = json.current;
 
-    if (!current) {
+    if (!current || current.temperature_2m == null) {
       return NextResponse.json({ available: false, error: "No current data" });
     }
 
-    const forecast = (json.weather ?? []).slice(0, 3).map((day) => ({
-      date: day.date,
-      maxTemp: parseInt(day.maxtempC, 10),
-      minTemp: parseInt(day.mintempC, 10),
-      description: day.hourly?.[4]?.weatherDesc?.[0]?.value ?? "Unknown",
-      weatherCode: day.hourly?.[4]?.weatherCode ?? "116",
+    const daily = json.daily;
+    const forecast = (daily?.time ?? []).slice(0, 3).map((date: string, i: number) => ({
+      date,
+      maxTemp: Math.round(daily.temperature_2m_max[i]),
+      minTemp: Math.round(daily.temperature_2m_min[i]),
+      description: WMO_DESCRIPTIONS[daily.weather_code[i]] ?? "Unknown",
+      weatherCode: String(daily.weather_code[i]),
     }));
 
     return NextResponse.json(
       {
         available: true,
-        tempC: parseInt(current.temp_C, 10),
-        feelsLikeC: parseInt(current.FeelsLikeC, 10),
-        humidity: parseInt(current.humidity, 10),
-        windKmh: parseInt(current.windspeedKmph, 10),
-        description: current.weatherDesc?.[0]?.value ?? "Unknown",
-        weatherCode: current.weatherCode ?? "116",
+        tempC: Math.round(current.temperature_2m),
+        feelsLikeC: Math.round(current.apparent_temperature),
+        humidity: Math.round(current.relative_humidity_2m),
+        windKmh: Math.round(current.wind_speed_10m),
+        description: WMO_DESCRIPTIONS[current.weather_code] ?? "Unknown",
+        weatherCode: String(current.weather_code),
         forecast,
       },
       {
         headers: {
-          "Cache-Control": "s-maxage=1800, stale-while-revalidate=3600",
+          "Cache-Control": "s-maxage=900, stale-while-revalidate=1800",
         },
       }
     );

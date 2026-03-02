@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -26,11 +27,33 @@ const navItems = [
 
 export function TabNav() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = navRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    const el = navRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [checkScroll]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--nav-bg)] backdrop-blur-sm border-b border-[var(--card-border)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-14 gap-8">
+        <div className="flex items-center h-14 gap-4 sm:gap-8">
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -41,32 +64,45 @@ export function TabNav() {
             </span>
           </Link>
 
-          {/* Tabs */}
-          <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1">
-            {navItems.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
-              const Icon = item.icon;
+          {/* Tabs with fade hints */}
+          <div className="relative flex-1 min-w-0">
+            {/* Left fade */}
+            {canScrollLeft && (
+              <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[var(--nav-bg)] to-transparent z-10 pointer-events-none" />
+            )}
+            {/* Right fade */}
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[var(--nav-bg)] to-transparent z-10 pointer-events-none" />
+            )}
+            <nav
+              ref={navRef}
+              className="flex items-center gap-1 overflow-x-auto scrollbar-hide"
+            >
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+                const Icon = item.icon;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors",
-                    isActive
-                      ? "text-[var(--text-primary)] bg-[var(--nav-active)]"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]"
-                  )}
-                >
-                  <Icon size={16} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors",
+                      isActive
+                        ? "text-[var(--text-primary)] bg-[var(--nav-active)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]"
+                    )}
+                  >
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
           {/* Theme Toggle */}
           <ThemeToggle />
