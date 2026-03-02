@@ -47,6 +47,9 @@ scheduleJob("0 1 1 * *", () => hit("/api/etl/real-estate-sales"));
 // Business yearly totals — monthly on the 2nd
 scheduleJob("0 1 2 * *", () => hit("/api/etl/business-yearly"));
 
+// Building permit yearly totals — monthly on the 2nd
+scheduleJob("10 1 2 * *", () => hit("/api/etl/building-permit-yearly"));
+
 console.log(`[cron] Scheduler started. Base URL: ${BASE}`);
 
 // Run ALL ETLs on startup (wait 30s for Next.js to be ready)
@@ -60,6 +63,7 @@ setTimeout(async () => {
   await hit("/api/etl/housing");
   await hit("/api/etl/real-estate-sales");
   await hit("/api/etl/business-yearly");
+  await hit("/api/etl/building-permit-yearly");
 
   // External sources
   await hit("/api/etl/news");

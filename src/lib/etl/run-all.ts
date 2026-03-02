@@ -12,6 +12,7 @@ export async function runAllEtl() {
     { name: "Business Licences", load: () => import("./business-licences") },
     { name: "Business Yearly", load: () => import("./business-yearly") },
     { name: "Building Permits", load: () => import("./building-permits") },
+    { name: "Building Permit Yearly", load: () => import("./building-permit-yearly") },
     { name: "Real Estate Listings", load: () => import("./listings-fetcher") },
     { name: "Real Estate Sales", load: () => import("./real-estate-sales") },
   ];

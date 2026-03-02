@@ -117,6 +117,14 @@ sqlite.exec(`
     percent_change REAL,
     source TEXT
   );
+  CREATE TABLE IF NOT EXISTS building_permit_yearly (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER NOT NULL,
+    total_value REAL NOT NULL,
+    total_units INTEGER,
+    percent_change_value REAL,
+    source TEXT
+  );
   CREATE TABLE IF NOT EXISTS real_estate_sales (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     year INTEGER NOT NULL,

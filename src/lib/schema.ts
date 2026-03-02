@@ -116,6 +116,15 @@ export const businessYearlyTotals = sqliteTable("business_yearly_totals", {
   source: text("source"),
 });
 
+export const buildingPermitYearly = sqliteTable("building_permit_yearly", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  year: integer("year").notNull(),
+  totalValue: real("total_value").notNull(),
+  totalUnits: integer("total_units"),
+  percentChangeValue: real("percent_change_value"),
+  source: text("source"),
+});
+
 export const realEstateSales = sqliteTable("real_estate_sales", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   year: integer("year").notNull(),

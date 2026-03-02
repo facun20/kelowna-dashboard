@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import {
   businessLicences,
   buildingPermits,
+  buildingPermitYearly,
   businessYearlyTotals,
   crimeStats,
   realEstateListings,
@@ -56,44 +57,32 @@ async function getKpis() {
           return c && c.count > 0 ? c.count.toLocaleString() : "\u2014";
         })();
 
-    // ── Permit Value ──────────────────────────────────────────
-    const permitValueResult = db
-      .select({ total: sum(buildingPermits.projectValue) })
-      .from(buildingPermits)
-      .where(sql`${buildingPermits.issueDate} LIKE ${currentYear + '%'} AND ${buildingPermits.projectValue} IS NOT NULL`)
-      .get();
-    const permitTotal = permitValueResult?.total ? Number(permitValueResult.total) : null;
-
-    const priorPermitResult = db
-      .select({ total: sum(buildingPermits.projectValue) })
-      .from(buildingPermits)
-      .where(sql`${buildingPermits.issueDate} LIKE ${(currentYear - 1) + '%'} AND ${buildingPermits.projectValue} IS NOT NULL`)
-      .get();
-    const priorPermitTotal = priorPermitResult?.total ? Number(priorPermitResult.total) : null;
+    // ── Permit Value — from building_permit_yearly table ────────
+    const permitYears = db.select()
+      .from(buildingPermitYearly)
+      .orderBy(desc(buildingPermitYearly.year))
+      .limit(2)
+      .all();
+    const permitLatest = permitYears[0];
+    const permitPrior = permitYears[1];
 
     let permitValueStr = "\u2014";
     let permitChange: number | undefined;
-    let permitLabel = `${currentYear}`;
-    const displayTotal = permitTotal && permitTotal > 0 ? permitTotal : null;
-    if (displayTotal) {
-      permitValueStr = displayTotal >= 1_000_000_000
-        ? `$${(displayTotal / 1_000_000_000).toFixed(2)}B`
-        : displayTotal >= 1_000_000
-          ? `$${Math.round(displayTotal / 1_000_000)}M`
-          : `$${Math.round(displayTotal / 1_000)}K`;
-      if (priorPermitTotal && priorPermitTotal > 0) {
+    let permitLabel = "";
+    if (permitLatest) {
+      const v = permitLatest.totalValue;
+      permitValueStr = v >= 1_000_000_000
+        ? `$${(v / 1_000_000_000).toFixed(2)}B`
+        : v >= 1_000_000
+          ? `$${Math.round(v / 1_000_000)}M`
+          : `$${Math.round(v / 1_000)}K`;
+      permitLabel = `${permitLatest.year}`;
+      if (permitPrior && permitPrior.totalValue > 0) {
         permitChange = Number(
-          (((displayTotal - priorPermitTotal) / priorPermitTotal) * 100).toFixed(1)
+          (((v - permitPrior.totalValue) / permitPrior.totalValue) * 100).toFixed(1)
         );
-        permitLabel = `${currentYear} · vs ${currentYear - 1}`;
+        permitLabel = `${permitLatest.year} · vs ${permitPrior.year}`;
       }
-    } else if (priorPermitTotal && priorPermitTotal > 0) {
-      permitValueStr = priorPermitTotal >= 1_000_000_000
-        ? `$${(priorPermitTotal / 1_000_000_000).toFixed(2)}B`
-        : priorPermitTotal >= 1_000_000
-          ? `$${Math.round(priorPermitTotal / 1_000_000)}M`
-          : `$${Math.round(priorPermitTotal / 1_000)}K`;
-      permitLabel = `${currentYear - 1}`;
     }
 
     // ── Crime Severity Index ──────────────────────────────────
