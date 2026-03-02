@@ -3,13 +3,17 @@ import { redditPosts } from "@/lib/schema";
 import Parser from "rss-parser";
 
 /**
- * Reddit ETL — tries JSON API first (has score/comments), falls back to RSS.
- * Reddit blocks unauthenticated JSON requests from datacenter IPs,
- * but the RSS feed is more reliably accessible from servers.
+ * Reddit ETL for r/kelowna.
+ *
+ * Priority order:
+ *   1. rss.app aggregated feed (reliable from any server)
+ *   2. Reddit JSON API (has score + comments, but blocked from datacenter IPs)
+ *   3. Reddit native RSS (less data, but sometimes works when JSON doesn't)
  */
 
-const RSS_URL = "https://www.reddit.com/r/kelowna/new/.rss?limit=50";
+const RSSAPP_URL = "https://rss.app/feeds/s9heXjrvTov4z8dp.xml";
 const JSON_URL = "https://www.reddit.com/r/kelowna/new.json?limit=100";
+const REDDIT_RSS_URL = "https://www.reddit.com/r/kelowna/new/.rss?limit=50";
 
 const USER_AGENT =
   "KelownaCivicDashboard/1.0 (by civic-dashboard-bot; educational project)";
@@ -48,7 +52,41 @@ interface ParsedPost {
   numComments: number;
 }
 
-/** Strategy 1: JSON API (richer data — score + comments) */
+/** Parse a reddit post ID from a URL like /r/kelowna/comments/1abc123/... */
+function extractRedditId(url: string): string {
+  const match = url.match(/\/comments\/(\w+)/);
+  return match?.[1] ?? url.replace(/\W/g, "").slice(-12);
+}
+
+/** Strategy 1: rss.app feed (always works from any server) */
+async function fetchViaRssApp(): Promise<{ posts: ParsedPost[]; error?: string }> {
+  try {
+    const parser = new Parser({
+      timeout: 20_000,
+      headers: { "User-Agent": USER_AGENT },
+    });
+    const feed = await parser.parseURL(RSSAPP_URL);
+
+    return {
+      posts: (feed.items ?? []).map((item) => {
+        const link = item.link ?? "";
+        return {
+          redditId: extractRedditId(link),
+          title: item.title ?? "",
+          url: link,
+          selftext: item.contentSnippet?.slice(0, 1000) ?? null,
+          createdUtc: item.isoDate ?? null,
+          score: 0,
+          numComments: 0,
+        };
+      }),
+    };
+  } catch (err) {
+    return { posts: [], error: `rss.app feed failed: ${String(err)}` };
+  }
+}
+
+/** Strategy 2: Reddit JSON API (richer data — score + comments) */
 async function fetchViaJson(): Promise<{ posts: ParsedPost[]; error?: string }> {
   try {
     const res = await fetch(JSON_URL, {
@@ -78,21 +116,20 @@ async function fetchViaJson(): Promise<{ posts: ParsedPost[]; error?: string }> 
   }
 }
 
-/** Strategy 2: RSS feed (works from datacenter IPs, less data) */
-async function fetchViaRss(): Promise<{ posts: ParsedPost[]; error?: string }> {
+/** Strategy 3: Reddit native RSS */
+async function fetchViaRedditRss(): Promise<{ posts: ParsedPost[]; error?: string }> {
   try {
     const parser = new Parser({
       timeout: 15_000,
       headers: { "User-Agent": USER_AGENT },
     });
-    const feed = await parser.parseURL(RSS_URL);
+    const feed = await parser.parseURL(REDDIT_RSS_URL);
 
     return {
       posts: (feed.items ?? []).map((item) => {
         const link = item.link ?? "";
-        const idMatch = link.match(/\/comments\/(\w+)/);
         return {
-          redditId: idMatch?.[1] ?? item.id ?? link,
+          redditId: extractRedditId(link),
           title: item.title ?? "",
           url: link,
           selftext: item.contentSnippet?.slice(0, 1000) ?? null,
@@ -103,7 +140,7 @@ async function fetchViaRss(): Promise<{ posts: ParsedPost[]; error?: string }> {
       }),
     };
   } catch (err) {
-    return { posts: [], error: `RSS failed: ${String(err)}` };
+    return { posts: [], error: `Reddit RSS failed: ${String(err)}` };
   }
 }
 
@@ -116,21 +153,31 @@ export async function fetchAndStore(): Promise<{
   let inserted = 0;
   const updated = 0;
 
-  // Try JSON first, fall back to RSS
   let posts: ParsedPost[] = [];
-  const jsonResult = await fetchViaJson();
-  if (jsonResult.posts.length > 0) {
-    posts = jsonResult.posts;
+
+  // 1. Try rss.app (most reliable from any server)
+  const rssAppResult = await fetchViaRssApp();
+  if (rssAppResult.posts.length > 0) {
+    posts = rssAppResult.posts;
   } else {
-    if (jsonResult.error) errors.push(jsonResult.error);
-    const rssResult = await fetchViaRss();
-    if (rssResult.posts.length > 0) {
-      posts = rssResult.posts;
-      errors.push("Used RSS (JSON API blocked from server).");
+    if (rssAppResult.error) errors.push(rssAppResult.error);
+
+    // 2. Try Reddit JSON API (has score/comments)
+    const jsonResult = await fetchViaJson();
+    if (jsonResult.posts.length > 0) {
+      posts = jsonResult.posts;
     } else {
-      if (rssResult.error) errors.push(rssResult.error);
-      errors.push("Both Reddit JSON and RSS failed from this server.");
-      return { inserted, updated, errors };
+      if (jsonResult.error) errors.push(jsonResult.error);
+
+      // 3. Try Reddit native RSS
+      const rssResult = await fetchViaRedditRss();
+      if (rssResult.posts.length > 0) {
+        posts = rssResult.posts;
+      } else {
+        if (rssResult.error) errors.push(rssResult.error);
+        errors.push("All three Reddit sources failed.");
+        return { inserted, updated, errors };
+      }
     }
   }
 

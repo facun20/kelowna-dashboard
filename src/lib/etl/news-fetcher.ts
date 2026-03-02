@@ -5,7 +5,7 @@ import Parser from "rss-parser";
 const RSS_FEEDS = [
   {
     name: "Kelowna News",
-    url: "https://rss.app/feeds/tKJEmM035UA6WPhX.xml",
+    url: "https://rss.app/feeds/tj6ek1fEI06fdgCI.xml",
     filterForKelowna: false, // aggregated Kelowna feed — all articles relevant
   },
   {
