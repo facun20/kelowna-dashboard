@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { ClientShell } from "@/components/layout/ClientShell";
+import { BuyMeCoffee } from "@/components/layout/BuyMeCoffee";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,22 +30,16 @@ export default function RootLayout({
             `,
           }}
         />
+
+        {/* Google Fonts — Cookie for BMC button */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cookie&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="antialiased">
         <ClientShell>{children}</ClientShell>
-        <Script
-          src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-          data-name="bmc-button"
-          data-slug="kelownaintelhub"
-          data-color="#FFDD00"
-          data-emoji=""
-          data-font="Cookie"
-          data-text="Buy me a coffee"
-          data-outline-color="#000000"
-          data-font-color="#000000"
-          data-coffee-color="#ffffff"
-          strategy="lazyOnload"
-        />
+        <BuyMeCoffee />
       </body>
     </html>
   );
