@@ -42,10 +42,9 @@ COPY --from=builder /app/cron.mjs ./cron.mjs
 COPY --from=builder /app/start.sh ./start.sh
 RUN chmod +x start.sh
 
-# SQLite data volume — mounted at /data
+# SQLite data directory — mount a Railway volume at /data
 RUN mkdir -p /data && chown nextjs:nodejs /data
 ENV DB_PATH=/data/kelowna.db
-VOLUME /data
 
 # The app runs on port 3000
 EXPOSE 3000
